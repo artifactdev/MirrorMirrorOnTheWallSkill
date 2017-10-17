@@ -12,8 +12,8 @@ const Alexa = require('alexa-sdk');
 
 /**
  * App ID for the skill
- * 
- * replace with your app ID 
+ *
+ * replace with your app ID
  */
 const APP_ID = "amzn1.ask.skill.12001a25-5faa-4651-84dc-cd584a1c5ffa";
 
@@ -21,12 +21,6 @@ const MirrorMirror = require('./MirrorMirror');
 MirrorMirror.setup();
 
 const Keys = require("./certs/keys.json");
-const GoogleImages = require('google-images');
-var googleImages = new GoogleImages(Keys.cse.ID, Keys.cse.API_key);
-
-const YouTube = require('youtube-node');
-var youTube = new YouTube();
-youTube.setKey(Keys.youtube.API_key);
 
 exports.handler = function(event, context, callback) {
     let alexa = Alexa.handler(event, context);
@@ -124,45 +118,6 @@ var handlers = {
     'StopCommand': function() {
         this.emit(':tellWithCard', this.t("STOP_MESSAGE"), this.t("STOP_CARD"), this.t("STOP_MESSAGE"));
     },
-    'ShowTextIntent': function() {
-        let displayText = this.event.request.intent.slots.displayText.value;
-        if (displayText) {
-            let alexa = this
-
-            // Alexa voice/card response to invoke after text is published to AWS IoT successfully
-            let alexaEmit = function() {
-                alexa.emit(':tellWithCard', alexa.t("SHOW_TEXT", displayText), alexa.t("SHOW_TEXT_CARD"), displayText)
-            }
-
-            // Send publish attempt to AWS IoT
-            MirrorMirror.displayText(displayText, alexaEmit);
-        } else {
-            this.emit(':askWithCard', this.t("SHOW_TEXT_ERR"), this.t("SHOW_TEXT_ERR"), this.t("ERROR_CARD"), this.t("SHOW_TEXT_ERR"))
-        }
-    },
-    'ShowImagesIntent': function() {
-        let searchTerm = this.event.request.intent.slots.searchTerm.value;
-        if (searchTerm) {
-            let alexa = this
-
-            // Search for images
-            googleImages.search(searchTerm).then(function(images) {
-                // Only https urls are allowed for the Alexa cards
-                let imageObj = {
-                    smallImageUrl: images[0].thumbnail.url,
-                    largeImageUrl: images[0].thumbnail.url
-                };
-                let alexaEmit = function() {
-                    alexa.emit(':tellWithCard', alexa.t("SHOW_IMAGE", searchTerm), alexa.t("SHOW_IMAGE_CARD"), searchTerm, imageObj)
-                }
-
-                // Send publish attempt to AWS IoT
-                MirrorMirror.showImages(images, searchTerm, alexaEmit);
-            })
-        } else {
-            this.emit(':askWithCard', this.t("SHOW_IMAGE_ERR"), this.t("SHOW_IMAGE_ERR"), this.t("ERROR_CARD"), this.t("SHOW_IMAGE_ERR"))
-        }
-    },
     'TurnOnModuleIntent': function() {
         let moduleName = this.event.request.intent.slots.moduleName.value;
         if (moduleName) {
@@ -206,33 +161,5 @@ var handlers = {
         }
         MirrorMirror.changeModule('all_modules', false, alexaEmit);
 
-    },
-    'ShowVideoIntent': function() {
-        let searchTerm = this.event.request.intent.slots.searchTermVideo.value;
-        if (searchTerm) {
-            let alexa = this
-
-            // search for Youtube video
-            youTube.search(searchTerm, 1, function(error, result) {
-                if (error) {
-                    console.log(error);
-                } else {
-                    console.log(JSON.stringify(result, null, 2));
-
-                    let imageObj = {
-                        smallImageUrl: result.items[0].snippet.thumbnails.default.url,
-                        largeImageUrl: result.items[0].snippet.thumbnails.high.url
-                    };
-                    let alexaEmit = function() {
-                        alexa.emit(':tellWithCard', alexa.t("SHOW_VIDEO", searchTerm), alexa.t("SHOW_VIDEO_CARD"), searchTerm, imageObj)
-                    }
-
-                    // Send publish attempt to AWS IoT
-                    MirrorMirror.showVideo(result.items[0].id.videoId, searchTerm, alexaEmit);
-                }
-            });
-        } else {
-            this.emit(':askWithCard', this.t("SHOW_VIDEO_ERR"), this.t("SHOW_VIDEO_ERR"), this.t("ERROR_CARD"), this.t("SHOW_VIDEO_ERR"))
-        }
     }
 };
